@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil do Usuário</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Bem-vindo, {{session.user.username}}</h2>
+        <h4>Seus Agendamentos</h4>
+        
+        {{#if events.length}}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Título</th>
+                    <th>Data de Início</th>
+                    <th>Data de Término</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each events}}
+                <tr>
+                    <td>{{this.title}}</td>
+                    <td>{{this.start}}</td>
+                    <td>{{this.end}}</td>
+                    <td>
+                        {{#if (lt (diffInDays this.start) 1)}}
+                        <form action="/delete-event-user/{{this.id}}" method="POST">
+                            <button type="submit" class="btn btn-danger">Deletar</button>
+                        </form>
+                        {{else}}
+                        <button class="btn btn-secondary" disabled>Não pode deletar</button>
+                        {{/if}}
+                    </td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+        {{else}}
+        <p>Você não tem agendamentos.</p>
+        {{/if}}
+
+        <a href="/form" class="btn btn-primary">Agendar Novo Evento</a>
+        <a href="/logout" class="btn btn-secondary">Logout</a>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda</title>
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.5.1/main.min.css" rel="stylesheet">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="text-center">Agenda de Eventos</h1>
+        <!-- FullCalendar -->
+        <div id="calendar"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.5.1/main.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendar');
+
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                editable: true,  // Para permitir arrastar eventos
+                events: [
+                    {{#each events}}
+                    {
+                        id: '{{this.id}}',
+                        title: '{{this.title}}',
+                        start: '{{this.start}}',
+                        end: '{{this.end}}'
+                    },
+                    {{/each}}
+                ],
+                // Função para editar eventos no clique
+                eventClick: function(info) {
+                    var newTitle = prompt('Edite o título do evento:', info.event.title);
+                    var newStart = prompt('Edite a data de início (YYYY-MM-DD):', info.event.startStr);
+                    var newEnd = prompt('Edite a data de término (YYYY-MM-DD):', info.event.endStr);
+
+                    if (newTitle && newStart && newEnd) {
+                        fetch(`/edit-event/${info.event.id}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                title: newTitle,
+                                start: newStart,
+                                end: newEnd
+                            })
+                        }).then(() => {
+                            info.event.setProp('title', newTitle);
+                            info.event.setDates(newStart, newEnd);
+                        });
+                    }
+                },
+                // Função para deletar evento
+                eventRightClick: function(info) {
+                    if (confirm('Deseja realmente deletar este evento?')) {
+                        fetch(`/delete-event/${info.event.id}`, {
+                            method: 'POST'
+                        }).then(() => {
+                            info.event.remove();
+                        });
+                    }
+                }
+            });
+
+            calendar.render();
+        });
+    </script>
+</body>
+</html>

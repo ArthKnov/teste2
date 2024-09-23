@@ -1,4 +1,4 @@
-const { Sequelize, DataTypes } = require('sequelize'); 
+const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
 const User = sequelize.define('User', {
@@ -27,5 +27,10 @@ const User = sequelize.define('User', {
     tableName: 'users',
     timestamps: false
 });
+
+User.associate = (models) => {
+    User.hasMany(models.Event, { foreignKey: 'userId', as: 'events' }); // Adicionei o alias 'events'
+};
+
 
 module.exports = User;

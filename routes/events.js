@@ -1,19 +1,23 @@
 const express = require('express');
 const { Op } = require('sequelize');
 const router = express.Router();
-const Event = require('../models/Event');
+const Event = require('../models/event'); // Caminho corrigido
 const moment = require('moment');
 
 // Middleware para verificar se o usuário está autenticado
 function isAuthenticated(req, res, next) {
-    if (req.isAuthenticated()) return next();
+    if (req.isAuthenticated()) {
+        return next();
+    }
     res.redirect('/login');
 }
 
 // Rota para exibir a página de calendário (apenas para admin)
 router.get('/calendar', isAuthenticated, async (req, res) => {
-    if (req.session.user.isAdmin) {
-        const events = await Event.findAll();
+    if (req.user.isAdmin) {
+        const events = await Event.findAll({
+            include: [{ model: User, as: 'user' }] // Inclua o usuário aqui
+        });
         res.render('calendar', { events });
     } else {
         res.redirect('/profile');

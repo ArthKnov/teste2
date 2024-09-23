@@ -3,18 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda</title>
+    <title>Agenda de Eventos</title>
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.5.1/main.min.css" rel="stylesheet">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Minha Agenda</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/profile">Perfil</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/agendamento">Agendar Evento</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
     <div class="container mt-4">
         <h1 class="text-center">Agenda de Eventos</h1>
-        <!-- FullCalendar -->
         <div id="calendar"></div>
     </div>
 
+    <!-- Modal para Detalhar Evento -->
+    <div class="modal fade" id="eventModal" tabindex="-1" role="dialog" aria-labelledby="eventModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="eventModalLabel">Detalhes do Evento</h5>
+                    <button type="button" class="close" id="closeModal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Nome do Evento:</strong> <span id="eventTitle"></span></p>
+                    <p><strong>Data de Início:</strong> <span id="eventStart"></span></p>
+                    <p><strong>Data de Término:</strong> <span id="eventEnd"></span></p>
+                    <p><strong>Agendado por:</strong> <span id="eventUser"></span></p>
+                    <p><strong>Email:</strong> <span id="eventUserEmail"></span></p> <!-- Campo de email -->
+                    <p><strong>Telefone:</strong> <span id="eventUserPhone"></span></p> <!-- Campo de telefone -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="editEvent">Alterar Data</button>
+                    <button type="button" class="btn btn-danger" id="deleteEvent">Deletar Evento</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.5.1/main.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             var calendarEl = document.getElementById('calendar');
@@ -26,53 +68,59 @@
                     center: 'title',
                     right: 'dayGridMonth,timeGridWeek,timeGridDay'
                 },
-                editable: true,  // Para permitir arrastar eventos
-                events: [
-                    {{#each events}}
-                    {
-                        id: '{{this.id}}',
-                        title: '{{this.title}}',
-                        start: '{{this.start}}',
-                        end: '{{this.end}}'
-                    },
-                    {{/each}}
-                ],
-                // Função para editar eventos no clique
+                events: '/events', // Rota que fornece os eventos
                 eventClick: function(info) {
-                    var newTitle = prompt('Edite o título do evento:', info.event.title);
-                    var newStart = prompt('Edite a data de início (YYYY-MM-DD):', info.event.startStr);
-                    var newEnd = prompt('Edite a data de término (YYYY-MM-DD):', info.event.endStr);
+                    document.getElementById('eventTitle').innerText = info.event.title;
+                    document.getElementById('eventStart').innerText = info.event.start.toLocaleString();
+                    document.getElementById('eventEnd').innerText = info.event.end ? info.event.end.toLocaleString() : 'N/A';
+                    document.getElementById('eventUser').innerText = info.event.extendedProps.user || 'Desconhecido';
+                    document.getElementById('eventUserEmail').innerText = info.event.extendedProps.userEmail || 'N/A'; // Campo de email
+                    document.getElementById('eventUserPhone').innerText = info.event.extendedProps.userPhone || 'N/A'; // Campo de telefone
 
-                    if (newTitle && newStart && newEnd) {
-                        fetch(`/edit-event/${info.event.id}`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                title: newTitle,
-                                start: newStart,
-                                end: newEnd
-                            })
-                        }).then(() => {
-                            info.event.setProp('title', newTitle);
-                            info.event.setDates(newStart, newEnd);
-                        });
-                    }
-                },
-                // Função para deletar evento
-                eventRightClick: function(info) {
-                    if (confirm('Deseja realmente deletar este evento?')) {
-                        fetch(`/delete-event/${info.event.id}`, {
-                            method: 'POST'
-                        }).then(() => {
-                            info.event.remove();
-                        });
-                    }
+                    $('#eventModal').modal('show');
+
+                    // Função para deletar o evento
+                    document.getElementById('deleteEvent').onclick = function() {
+                        if (confirm('Deseja realmente deletar este evento?')) {
+                            fetch(`/delete-event-user/${info.event.id}`, {
+                                method: 'POST'
+                            }).then(() => {
+                                info.event.remove();
+                                $('#eventModal').modal('hide');
+                            });
+                        }
+                    };
+
+                    // Função para editar evento
+                    document.getElementById('editEvent').onclick = function() {
+                        var newStart = prompt('Edite a data de início (YYYY-MM-DD):', info.event.startStr);
+                        var newEnd = prompt('Edite a data de término (YYYY-MM-DD):', info.event.endStr);
+
+                        if (newStart && newEnd) {
+                            fetch(`/edit-event/${info.event.id}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    start: newStart,
+                                    end: newEnd
+                                })
+                            }).then(() => {
+                                info.event.setDates(newStart, newEnd);
+                                $('#eventModal').modal('hide');
+                            });
+                        }
+                    };
                 }
             });
 
             calendar.render();
+
+            // Função para fechar o modal
+            document.getElementById('closeModal').onclick = function() {
+                $('#eventModal').modal('hide');
+            };
         });
     </script>
 </body>

@@ -1,6 +1,6 @@
-const { Sequelize, DataTypes } = require('sequelize');
+const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-const User = require('./User');
+const User = require('./user'); // Corrigido o caminho para o modelo User
 
 const Event = sequelize.define('Event', {
     title: {
@@ -19,7 +19,7 @@ const Event = sequelize.define('Event', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: User,
+            model: 'users', // Nome da tabela de usuários
             key: 'id'
         }
     }
@@ -27,5 +27,9 @@ const Event = sequelize.define('Event', {
     tableName: 'events',
     timestamps: false
 });
+
+Event.associate = (models) => {
+    Event.belongsTo(models.User, { foreignKey: 'userId', as: 'user' }); // Adicionei o alias 'user'
+};
 
 module.exports = Event;

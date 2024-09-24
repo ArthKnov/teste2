@@ -45,7 +45,8 @@
                 <tr>
                     <th>Título</th>
                     <th>Data de Início</th>
-                    <th>Data de Término</th>
+                    <th>Hora</th> <!-- Adicionando coluna para Hora -->
+                    <th>Profissional</th> <!-- Adicionando coluna para Profissional -->
                     <th>Ação</th>
                 </tr>
             </thead>
@@ -54,16 +55,19 @@
                 <tr>
                     <td>{{this.title}}</td>
                     <td>{{this.start}}</td>
-                    <td>{{this.end}}</td>
+                    <td>{{this.hora}}</td> <!-- Exibindo Hora -->
+                    <td>{{this.professionalName}}</td> <!-- Exibindo nome do profissional -->
                     <td>
-                        {{#if (lt (diffInDays this.start) 1)}}
-                        <form action="/delete-event-user/{{this.id}}" method="POST">
-                            <button type="submit" class="btn btn-danger">Deletar</button>
-                        </form>
-                        {{else}}
-                        <button class="btn btn-secondary" disabled>Não pode deletar</button>
-                        {{/if}}
-                    </td>
+<td>
+    {{#if (canCancel this.start)}}
+    <form action="/delete-event-user/{{this.id}}" method="POST">
+        <button type="submit" class="btn btn-danger">Cancelar</button>
+    </form>
+    {{else}}
+    <button class="btn btn-secondary" disabled>Não pode cancelar</button>
+    {{/if}}
+</td>
+
                 </tr>
                 {{/each}}
             </tbody>
@@ -76,7 +80,7 @@
         <a href="/logout" class="btn btn-secondary">Logout</a>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.2.slim.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -6,6 +6,7 @@
     <title>Agenda de Eventos</title>
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.5.1/main.min.css" rel="stylesheet">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script> <!-- Adicionando Moment.js -->
 </head>
 <body>
     <!-- Navbar -->
@@ -39,12 +40,21 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <p><strong>Nome do Evento:</strong> <span id="eventTitle"></span></p>
-                    <p><strong>Data de Início:</strong> <span id="eventStart"></span></p>
-                    <p><strong>Data de Término:</strong> <span id="eventEnd"></span></p>
+                    <p><strong>Serviço:</strong> <span id="eventTitle"></span></p>
+                    <p><strong>Profissional:</strong> <span id="eventprofessionalName"></span></p>
+                    <p><strong>Data:</strong> <span id="eventStart"></span></p>
+                    <p><strong>Horário:</strong> <span id="eventHora"></span></p>
                     <p><strong>Agendado por:</strong> <span id="eventUser"></span></p>
-                    <p><strong>Email:</strong> <span id="eventUserEmail"></span></p> <!-- Campo de email -->
-                    <p><strong>Telefone:</strong> <span id="eventUserPhone"></span></p> <!-- Campo de telefone -->
+                    <p><strong>Email:</strong> <span id="eventUserEmail"></span></p>
+                    <p><strong>Telefone:</strong> <span id="eventUserPhone"></span></p>
+                    <div class="form-group">
+                        <label for="newEventDate">Nova Data:</label>
+                        <input type="date" class="form-control" id="newEventDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="newEventHour">Novo Horário:</label>
+                        <input type="time" class="form-control" id="newEventHour">
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" id="editEvent">Alterar Data</button>
@@ -71,19 +81,20 @@
                 events: '/events', // Rota que fornece os eventos
                 eventClick: function(info) {
                     document.getElementById('eventTitle').innerText = info.event.title;
+                    document.getElementById('eventprofessionalName').innerText = info.event.extendedProps.professionalName || 'Desconhecido';
                     document.getElementById('eventStart').innerText = info.event.start.toLocaleString();
-                    document.getElementById('eventEnd').innerText = info.event.end ? info.event.end.toLocaleString() : 'N/A';
-                    document.getElementById('eventUser').innerText = info.event.extendedProps.user || 'Desconhecido';
-                    document.getElementById('eventUserEmail').innerText = info.event.extendedProps.userEmail || 'N/A'; // Campo de email
-                    document.getElementById('eventUserPhone').innerText = info.event.extendedProps.userPhone || 'N/A'; // Campo de telefone
+                    document.getElementById('eventHora').innerText = info.event.extendedProps.hora || 'Desconhecido'; // Corrigido para "extendedProps"
+                    document.getElementById('eventUser').innerText = info.event.extendedProps.user.nome || 'Desconhecido';
+                    document.getElementById('eventUserEmail').innerText = info.event.extendedProps.user.email || 'N/A';
+                    document.getElementById('eventUserPhone').innerText = info.event.extendedProps.user.telefone || 'N/A';
 
                     $('#eventModal').modal('show');
 
                     // Função para deletar o evento
                     document.getElementById('deleteEvent').onclick = function() {
                         if (confirm('Deseja realmente deletar este evento?')) {
-                            fetch(`/delete-event-user/${info.event.id}`, {
-                                method: 'POST'
+                            fetch(`/delete-event/${info.event.id}`, {
+                                method: 'DELETE'
                             }).then(() => {
                                 info.event.remove();
                                 $('#eventModal').modal('hide');
@@ -92,24 +103,39 @@
                     };
 
                     // Função para editar evento
-                    document.getElementById('editEvent').onclick = function() {
-                        var newStart = prompt('Edite a data de início (YYYY-MM-DD):', info.event.startStr);
-                        var newEnd = prompt('Edite a data de término (YYYY-MM-DD):', info.event.endStr);
+                    document.getElementById('editEvent').onclick = async function() {
+                        const newStart = document.getElementById('newEventDate').value;
+                        const newHour = document.getElementById('newEventHour').value;
 
-                        if (newStart && newEnd) {
-                            fetch(`/edit-event/${info.event.id}`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    start: newStart,
-                                    end: newEnd
-                                })
-                            }).then(() => {
-                                info.event.setDates(newStart, newEnd);
-                                $('#eventModal').modal('hide');
-                            });
+                        if (newStart && newHour) {
+                            // Combine a nova data e horário
+                            const newStartDateTime = moment(`${newStart}T${newHour}`).format(); // Use "T" para o formato ISO
+
+                            try {
+                                const response = await fetch(`/edit-event/${info.event.id}`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({
+                                        title: info.event.title,
+                                        start: newStartDateTime,
+                                    }),
+                                });
+
+                                if (response.ok) {
+                                    info.event.setStart(newStartDateTime); // Atualiza a data do evento
+                                    $('#eventModal').modal('hide'); // Fecha o modal
+                                    alert('Evento atualizado com sucesso!');
+                                } else {
+                                    throw new Error('Erro ao atualizar o evento');
+                                }
+                            } catch (error) {
+                                console.error('Erro:', error);
+                                alert('Erro ao atualizar o evento. Verifique o console para mais detalhes.');
+                            }
+                        } else {
+                            alert('Por favor, preencha a nova data e o novo horário.');
                         }
                     };
                 }
